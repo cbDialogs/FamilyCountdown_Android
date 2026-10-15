@@ -8,6 +8,7 @@ import com.dialogs.familycountdown.model.Iso8601
 import com.dialogs.familycountdown.model.SettingsStore
 import com.dialogs.familycountdown.model.TimeRemaining
 import com.dialogs.familycountdown.model.TimeShift
+import com.dialogs.familycountdown.model.TrainSchedule
 import com.dialogs.familycountdown.ui.board.DazzleRun
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -20,6 +21,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.UUID
+import kotlin.random.Random
 
 class CountdownTests {
 
@@ -225,6 +227,23 @@ class CountdownTests {
         assertTrue("expected variety across columns, got $acrossColumns", acrossColumns.size > 5)
         val acrossRows = (0 until 8).map { a.charFor(it, 0, ' ') }.toSet()
         assertTrue("expected variety across rows, got $acrossRows", acrossRows.size > 2)
+    }
+
+    // MARK: - Arrival train
+
+    @Test fun trainGapWithinBounds() {
+        val random = Random(7)
+        val gaps = (1..1000).map { TrainSchedule.randomGapMs(random) }
+        gaps.forEach { assertTrue("gap $it out of range", it in TrainSchedule.MIN_GAP_MS..TrainSchedule.MAX_GAP_MS) }
+        assertTrue("gaps should vary", gaps.toSet().size > 100)
+        assertTrue(TrainSchedule.MIN_GAP_MS >= 2 * 60_000L && TrainSchedule.MAX_GAP_MS <= 5 * 60_000L)
+    }
+
+    @Test fun trainActiveOnlyWhenArrivedEnabledAndNotBlackout() {
+        assertTrue(TrainSchedule.isActive(enabled = true, blackout = false, anyArrived = true))
+        assertFalse(TrainSchedule.isActive(enabled = false, blackout = false, anyArrived = true))
+        assertFalse(TrainSchedule.isActive(enabled = true, blackout = true, anyArrived = true))
+        assertFalse(TrainSchedule.isActive(enabled = true, blackout = false, anyArrived = false))
     }
 
     private fun tempFile() = File(System.getProperty("java.io.tmpdir"), "fc-test-${UUID.randomUUID()}.json")

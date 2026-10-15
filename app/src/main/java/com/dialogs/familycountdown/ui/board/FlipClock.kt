@@ -24,29 +24,39 @@ import com.dialogs.familycountdown.model.TimeRemaining
  * right-to-left 50ms stagger so the rightmost digit leads the cascade.
  * While a [dazzle] run is active the digits show its scrambled characters
  * instead and follow its left-to-right wave; [startColumn] is this group's
- * first board column for that wave.
+ * first board column for that wave. [onLastTap] makes the last digit tappable.
  */
 @Composable
-fun FlipGroup(value: Int, digits: Int, metrics: FlipMetrics, dazzle: DazzleRun? = null, row: Int = 0, startColumn: Int = 0) {
+fun FlipGroup(
+    value: Int, digits: Int, metrics: FlipMetrics, dazzle: DazzleRun? = null, row: Int = 0, startColumn: Int = 0,
+    onLastTap: (() -> Unit)? = null,
+) {
     val chars = value.coerceAtLeast(0).toString().padStart(digits, '0').takeLast(digits)
     val gap = with(LocalDensity.current) { metrics.intraSpacing.toDp() }
     Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
         chars.forEachIndexed { idx, ch ->
             val column = startColumn + idx
+            val tapModifier = if (idx == chars.lastIndex && onLastTap != null) silentClickable(onLastTap) else Modifier
             if (dazzle == null) {
-                FlipDigit(value = ch, metrics = metrics, delayMs = (chars.length - 1 - idx) * FlipMetrics.STAGGER_MS)
+                FlipDigit(value = ch, metrics = metrics, delayMs = (chars.length - 1 - idx) * FlipMetrics.STAGGER_MS, modifier = tapModifier)
             } else {
-                FlipDigit(value = dazzle.charFor(row, column, ch), metrics = metrics, delayMs = dazzle.stagger(column))
+                FlipDigit(value = dazzle.charFor(row, column, ch), metrics = metrics, delayMs = dazzle.stagger(column), modifier = tapModifier)
             }
         }
     }
 }
 
+/** A tap target with no ripple, so a tile stays a plain flap. */
+@Composable
+private fun silentClickable(onClick: () -> Unit): Modifier =
+    Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+
 /**
  * Renders a string as a row of resting flap tiles — used for event names and
  * the ARRIVED word so they match the split-flap digits. The tiles animate only
  * while a [dazzle] run is active. [onFirstTap] makes the first tile tappable
- * (the board's "razzle dazzle" trigger on the top row).
+ * (the board's "razzle dazzle" trigger on the top row); [onLastTap] the last
+ * (the arrival-train trigger when the bottom row reads ARRIVED).
  */
 @Composable
 fun TileText(
@@ -59,13 +69,16 @@ fun TileText(
     row: Int = 0,
     startColumn: Int = 0,
     onFirstTap: (() -> Unit)? = null,
+    onLastTap: (() -> Unit)? = null,
 ) {
     val gap = with(LocalDensity.current) { metrics.intraSpacing.toDp() }
     Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
         text.forEachIndexed { idx, ch ->
-            val tapModifier = if (idx == 0 && onFirstTap != null) {
-                Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onFirstTap)
-            } else Modifier
+            val tapModifier = when {
+                idx == 0 && onFirstTap != null -> silentClickable(onFirstTap)
+                idx == text.lastIndex && onLastTap != null -> silentClickable(onLastTap)
+                else -> Modifier
+            }
             DazzleTile(
                 real = ch, row = row, column = startColumn + idx, dazzle = dazzle, metrics = metrics,
                 tileTop = tileTop, tileBottom = tileBottom, glyph = glyph, modifier = tapModifier,
@@ -108,14 +121,20 @@ private fun HeaderLabel(text: String, digits: Int, metrics: FlipMetrics) {
     }
 }
 
-/** The full DDDD HH MM SS split-flap readout — spacing between groups, exactly like the web board. */
+/**
+ * The full DDDD HH MM SS split-flap readout — spacing between groups, exactly like
+ * the web board. [onLastTap] makes the seconds' ones digit tappable.
+ */
 @Composable
-fun FlipClock(remaining: TimeRemaining, metrics: FlipMetrics, dazzle: DazzleRun? = null, row: Int = 0, startColumn: Int = 0) {
+fun FlipClock(
+    remaining: TimeRemaining, metrics: FlipMetrics, dazzle: DazzleRun? = null, row: Int = 0, startColumn: Int = 0,
+    onLastTap: (() -> Unit)? = null,
+) {
     val gap = with(LocalDensity.current) { metrics.groupSpacing.toDp() }
     Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
         FlipGroup(remaining.days, 4, metrics, dazzle, row, startColumn)
         FlipGroup(remaining.hours, 2, metrics, dazzle, row, startColumn + 4)
         FlipGroup(remaining.minutes, 2, metrics, dazzle, row, startColumn + 6)
-        FlipGroup(remaining.seconds, 2, metrics, dazzle, row, startColumn + 8)
+        FlipGroup(remaining.seconds, 2, metrics, dazzle, row, startColumn + 8, onLastTap = onLastTap)
     }
 }

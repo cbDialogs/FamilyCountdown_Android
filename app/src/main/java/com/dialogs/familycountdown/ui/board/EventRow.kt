@@ -19,7 +19,8 @@ import com.dialogs.familycountdown.model.DisplayEvent
  *
  * [dazzle] scrambles every tile while a razzle-dazzle run is active; the
  * clock's columns continue after the longest name's so the wave sweeps the
- * whole row left to right. [onDazzleTap] (top row only) arms the first tile.
+ * whole row left to right. [onDazzleTap] (top row only) arms the first tile;
+ * [onTrainTap] (bottom row only) arms the last card, digit or ARRIVED letter.
  */
 @Composable
 fun EventRow(
@@ -30,6 +31,7 @@ fun EventRow(
     row: Int = 0,
     clockStartColumn: Int = 0,
     onDazzleTap: (() -> Unit)? = null,
+    onTrainTap: (() -> Unit)? = null,
 ) {
     Row(
         Modifier.fillMaxWidth().height(rowHeight),
@@ -43,9 +45,13 @@ fun EventRow(
                 tileTop = FlipMetrics.arrivedTile, tileBottom = FlipMetrics.arrivedTile,
                 glyph = Color.White,
                 dazzle = dazzle, row = row, startColumn = clockStartColumn,
+                onLastTap = onTrainTap,
             )
         } else {
-            FlipClock(remaining = event.remaining, metrics = metrics, dazzle = dazzle, row = row, startColumn = clockStartColumn)
+            FlipClock(
+                remaining = event.remaining, metrics = metrics, dazzle = dazzle, row = row, startColumn = clockStartColumn,
+                onLastTap = onTrainTap,
+            )
         }
     }
 }

@@ -12,7 +12,8 @@ import java.time.format.FormatStyle
 /**
  * User preferences: the display time zone used for day boundaries (ARRIVED /
  * roll-forward), holiday midnights, and the editor's date fields (empty
- * identifier == Automatic, follows the device), and the night-blackout switch.
+ * identifier == Automatic, follows the device), the night-blackout switch, and the
+ * arrival-train switch.
  */
 class SettingsStore(context: Context) {
     private val prefs: SharedPreferences =
@@ -35,6 +36,15 @@ class SettingsStore(context: Context) {
         prefs.edit().putBoolean(KEY_BLACKOUT, enabled).apply()
     }
 
+    private val _arrivalTrainEnabled = MutableStateFlow(prefs.getBoolean(KEY_TRAIN, true))
+    /** When on, a steam train crosses the board every few minutes while an event shows ARRIVED. */
+    val arrivalTrainEnabled: StateFlow<Boolean> = _arrivalTrainEnabled
+
+    fun setArrivalTrainEnabled(enabled: Boolean) {
+        _arrivalTrainEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_TRAIN, enabled).apply()
+    }
+
     val isAutomatic: Boolean get() = _timeZoneIdentifier.value.isEmpty()
 
     /** Resolved zone; read freshly each time so a system zone change is picked up. */
@@ -46,6 +56,7 @@ class SettingsStore(context: Context) {
     companion object {
         private const val KEY_TZ = "timeZoneIdentifier"
         private const val KEY_BLACKOUT = "nightBlackoutEnabled"
+        private const val KEY_TRAIN = "arrivalTrainEnabled"
 
         /** Night blackout window: 9:00 PM up to (not including) 6:00 AM, local to the display zone. */
         const val BLACKOUT_START_HOUR = 21

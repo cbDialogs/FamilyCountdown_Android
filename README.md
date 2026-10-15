@@ -17,8 +17,8 @@ in landscape, but it works on any landscape tablet from Android 8 (API 26) up.
 The gear (top-right), or a tap anywhere on the board, opens the editor: set
 the display time zone, shift saved event times between zones, add / edit /
 delete events, grant the one permission needed for auto-start after a reboot,
-switch the night blackout on or off, and **Exit Kiosk** (close the app and
-return to Android).
+switch the night blackout and the arrival train on or off, and **Exit Kiosk**
+(close the app and return to Android).
 
 ![FamilyCountdown editor — Display settings (Time Zone, Shift Event Times), the Kiosk rows (auto-start permission, Night blackout switch, Exit Kiosk), and the editable event list](docs/settings.png)
 
@@ -31,6 +31,15 @@ left-to-right wave, then settles back on the real display.
 **Night blackout** (on by default) paints the board black from 9:00 PM to
 6:00 AM in the display time zone. A tap on the black screen still opens the
 editor, where the switch lives.
+
+**Arrival train** (on by default): on an event's day, while its row shows
+ARRIVED, a cartoon steam locomotive pulling three passenger cars crosses the
+middle of the board from right to left with a steam whistle, about ten seconds
+after the arrival first shows and then at a random interval of two to five
+minutes for the rest of the day (never during night blackout). The whistle
+plays on the device's media volume. The switch is in the editor's Kiosk section.
+Easter egg: tap the bottom-right card (the last seconds digit of the bottom row)
+and the train runs once, any day, switch or no switch.
 
 **Time Zone** picks which zone drives day boundaries (defaults to Automatic, following the device):
 
@@ -90,17 +99,19 @@ emulator -avd kiosk_1080p -no-snapshot-save -no-boot-anim &
 app/src/main/java/com/dialogs/familycountdown/
   model/      CountdownEvent, Iso8601, CountdownEngine, HolidayProvider, TimeShift,
               EventStore (JSON file), SettingsStore (SharedPreferences)
-  ui/board/   BoardScreen (board + 1 s tick, tap-anywhere, blackout, dazzle driver),
+  model/      TrainSchedule (arrival-train timing)
+  ui/board/   BoardScreen (board + 1 s tick, tap-anywhere, blackout, dazzle + train drivers),
               BoardLayout (font-size / rows math), EventRow,
               FlipClock/FlipGroup/TileText/ClockHeader, FlipDigit/TileFace (split-flap),
-              Dazzle (DazzleRun + DazzleTile)
+              Dazzle (DazzleRun + DazzleTile), Train (TrainRun + TrainOverlay), TrainWhistle
   ui/editor/  EditorOverlay (in-window sheet + back stack), EventListScreen, EventEditorScreen
               (+ date / time pickers), TimeZonePickerScreen, ShiftTimesScreen
   MainActivity (immersive, keep-screen-on), BootReceiver, FamilyCountdownApp
 app/src/main/assets/SeedEvents.json        first-launch seed (same file as iOS)
 app/src/main/res/font/                     JetBrains Mono ExtraBold
+app/src/main/res/raw/steam_whistle.wav     the arrival-train whistle (CC0, see Credits)
 app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, store round-trip, time shift,
-                                           blackout hours, dazzle characters
+                                           blackout hours, dazzle characters, train timing
 ```
 
 ## Notes
@@ -124,8 +135,8 @@ app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, 
 - **Editor windows**: the editor, confirmations and pickers are drawn inside the
   activity window (no Dialogs) so the system bars never reappear on the kiosk.
 - **Tap anywhere**: the board's root box has a tap-gesture handler that opens
-  the editor; the gear and the razzle-dazzle tile sit above it and consume
-  their own taps first.
+  the editor; the gear, the razzle-dazzle tile (top-left card) and the train
+  tile (bottom-right card) sit above it and consume their own taps first.
 - **Razzle dazzle**: `DazzleRun` (ui/board/Dazzle.kt) is a tick counter driven
   by `BoardScreen`. Event names and ARRIVED are static `TileFace`s at rest and
   become animated `FlipDigit`s only while a run is active (`DazzleTile`), so the
@@ -136,9 +147,26 @@ app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, 
 - **Night blackout**: `SettingsStore.isBlackoutHour` evaluates the 9 PM – 6 AM
   window in the display zone every tick, so the board goes dark and comes back
   on its own. The screen stays on (black pixels); nothing is scheduled.
+- **Arrival train**: `TrainSchedule` (model) is the pure timing rule — active
+  only while the switch is on, the board is lit, and some row has arrived; a
+  10 s first delay, then uniform random gaps of 2–5 min. `BoardScreen` runs that
+  schedule in a `LaunchedEffect` keyed on the active flag and creates a
+  `TrainRun`; `TrainOverlay` (ui/board/Train.kt) animates it across the board
+  with a `Canvas` (locomotive, three cars, spinning spokes, smoke puffs) in
+  9 s, reading progress only in the draw lambda so nothing recomposes. The
+  overlay has no pointer handling, so taps still reach the board. `TrainWhistle`
+  preloads the clip into a `SoundPool` on the media stream and plays it as the
+  train enters and again part-way across.
 - **Exit Kiosk**: `finishAndRemoveTask()` after an inline confirm. While
   auto-start is allowed the boot receiver brings the board back after the next
   power cycle.
+
+## Credits
+
+- Steam whistle: ["Steam whistle"](https://opengameart.org/node/5258) by bart,
+  OpenGameArt.org, [CC0](https://creativecommons.org/publicdomain/zero/1.0/)
+  (downmixed to mono).
+- Font: JetBrains Mono (SIL Open Font License).
 
 ## License
 

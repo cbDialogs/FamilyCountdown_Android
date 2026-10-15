@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +38,7 @@ import com.dialogs.familycountdown.model.CountdownEvent
 import com.dialogs.familycountdown.model.EventStore
 import com.dialogs.familycountdown.model.HolidayProvider
 import com.dialogs.familycountdown.model.SettingsStore
+import com.dialogs.familycountdown.model.TrainSchedule
 import com.dialogs.familycountdown.ui.theme.JetBrainsMono
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -45,13 +48,16 @@ import java.time.Instant
  * Names on the left, split-flap countdowns on the right. A subtle gear — or a
  * tap anywhere on the board — opens the editor. Tapping the first tile of the
  * top row starts a "razzle dazzle" run; between 9 PM and 6 AM (display zone)
- * the board is painted black when night blackout is on.
+ * the board is painted black when night blackout is on. While any event shows
+ * ARRIVED (and the board is lit), a steam train whistles across the middle of
+ * the screen every few minutes; tapping the bottom-right card runs it on demand.
  */
 @Composable
 fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> Unit) {
     val userEvents by store.events.collectAsState()
     val tzId by settings.timeZoneIdentifier.collectAsState()
     val blackoutEnabled by settings.nightBlackoutEnabled.collectAsState()
+    val trainEnabled by settings.arrivalTrainEnabled.collectAsState()
 
     var now by remember { mutableStateOf(Instant.now()) }
     LaunchedEffect(Unit) {
@@ -82,6 +88,22 @@ fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> 
         }
         delay(DazzleRun.SETTLE_GRACE_MS)   // let the staggered bounce finish before tiles go static
         dazzle = null
+    }
+
+    // Arrival train: first run shortly after an ARRIVED row appears, then at random
+    // every few minutes. Keyed on the boolean so it only restarts on transitions.
+    val context = LocalContext.current
+    val whistle = remember { TrainWhistle(context) }
+    DisposableEffect(whistle) { onDispose { whistle.release() } }
+    val trainActive = TrainSchedule.isActive(trainEnabled, blackout, board.any { it.arrived })
+    var train by remember { mutableStateOf<TrainRun?>(null) }
+    LaunchedEffect(trainActive) {
+        if (!trainActive) { train = null; return@LaunchedEffect }
+        delay(TrainSchedule.FIRST_RUN_DELAY_MS)
+        while (true) {
+            if (train == null) train = TrainRun()
+            delay(TrainSchedule.randomGapMs())
+        }
     }
 
     BoxWithConstraints(
@@ -129,11 +151,19 @@ fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> 
                             row = idx,
                             clockStartColumn = longest + 1,
                             onDazzleTap = if (idx == 0) ({ if (dazzle == null) dazzle = DazzleRun() }) else null,
+                            onTrainTap = if (idx == visible.lastIndex) ({ if (train == null) train = TrainRun() }) else null,
                         )
                         Box(Modifier.fillMaxWidth().height(with(density) { 1f.toDp() }).background(FlipMetrics.separator))
                     }
                 }
             }
+        }
+
+        train?.let { run ->
+            TrainOverlay(
+                run = run, widthPx = widthPx, heightPx = heightPx, rowHeightPx = layout.rowHeight,
+                whistle = whistle, onFinished = { train = null },
+            )
         }
 
         IconButton(onClick = onOpenEditor, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(48.dp)) {

@@ -163,13 +163,14 @@ private fun PinIcon() {
 /**
  * Kiosk: the boot receiver can only bring the board back after a reboot when
  * "Display over other apps" has been granted (Android 10+ background-start rule);
- * the night-blackout switch; and Exit Kiosk, which closes the app.
+ * the night-blackout and arrival-train switches; and Exit Kiosk, which closes the app.
  */
 @Composable
 private fun KioskSection(settings: SettingsStore) {
     val context = LocalContext.current
     var allowed by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     val blackout by settings.nightBlackoutEnabled.collectAsState()
+    val train by settings.arrivalTrainEnabled.collectAsState()
     var confirmExit by remember { mutableStateOf(false) }
 
     // Re-check when we come back from the system settings screen.
@@ -209,6 +210,12 @@ private fun KioskSection(settings: SettingsStore) {
             title = "Night blackout",
             subtitle = "Board goes black 9:00 PM – 6:00 AM (display time zone)",
             trailing = { Switch(checked = blackout, onCheckedChange = { settings.setNightBlackoutEnabled(it) }) },
+        )
+        RowDivider()
+        SettingsRow(
+            title = "Arrival train",
+            subtitle = "Steam train and whistle every few minutes on an event's day",
+            trailing = { Switch(checked = train, onCheckedChange = { settings.setArrivalTrainEnabled(it) }) },
         )
         RowDivider()
         SettingsRow(
