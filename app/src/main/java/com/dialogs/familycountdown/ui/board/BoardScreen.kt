@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -51,6 +52,8 @@ import java.time.Instant
  * the board is painted black when night blackout is on. While any event shows
  * ARRIVED (and the board is lit), a steam train whistles across the middle of
  * the screen every few minutes; tapping the bottom-right card runs it on demand.
+ * With flap sounds on, every card ticks as it lands and a dazzle run plays a
+ * card shuffle instead.
  */
 @Composable
 fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> Unit) {
@@ -58,6 +61,11 @@ fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> 
     val tzId by settings.timeZoneIdentifier.collectAsState()
     val blackoutEnabled by settings.nightBlackoutEnabled.collectAsState()
     val trainEnabled by settings.arrivalTrainEnabled.collectAsState()
+    val flapSounds by settings.flapSoundsEnabled.collectAsState()
+
+    val context = LocalContext.current
+    val sounds = remember { BoardSounds(context) }
+    DisposableEffect(sounds) { onDispose { sounds.release() } }
 
     var now by remember { mutableStateOf(Instant.now()) }
     LaunchedEffect(Unit) {
@@ -78,23 +86,29 @@ fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> 
     val board = CountdownEngine.board(allEvents, now, zone)
     val blackout = blackoutEnabled && SettingsStore.isBlackoutHour(now, zone)
 
-    // Razzle dazzle: one run at a time; BoardScreen owns the tick driver.
+    // Razzle dazzle: one run at a time; BoardScreen owns the tick driver. The
+    // shuffle loops for the scramble and stops on the settle tick.
     var dazzle by remember { mutableStateOf<DazzleRun?>(null) }
     LaunchedEffect(dazzle) {
         val run = dazzle ?: return@LaunchedEffect
-        for (t in 1..DazzleRun.TICKS + 1) {
+        if (flapSounds) sounds.startShuffle()
+        try {
+            for (t in 1..DazzleRun.TICKS) {
+                delay(DazzleRun.TICK_MS)
+                run.tick = t
+            }
             delay(DazzleRun.TICK_MS)
-            run.tick = t
+            sounds.stopShuffle()
+            run.tick = DazzleRun.TICKS + 1
+            delay(DazzleRun.SETTLE_GRACE_MS)   // let the staggered bounce finish before tiles go static
+            dazzle = null
+        } finally {
+            sounds.stopShuffle()
         }
-        delay(DazzleRun.SETTLE_GRACE_MS)   // let the staggered bounce finish before tiles go static
-        dazzle = null
     }
 
     // Arrival train: first run shortly after an ARRIVED row appears, then at random
     // every few minutes. Keyed on the boolean so it only restarts on transitions.
-    val context = LocalContext.current
-    val whistle = remember { TrainWhistle(context) }
-    DisposableEffect(whistle) { onDispose { whistle.release() } }
     val trainActive = TrainSchedule.isActive(trainEnabled, blackout, board.any { it.arrived })
     var train by remember { mutableStateOf<TrainRun?>(null) }
     LaunchedEffect(trainActive) {
@@ -106,68 +120,70 @@ fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> 
         }
     }
 
-    BoxWithConstraints(
-        Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            // Tap anywhere opens the editor; the gear and the dazzle tile consume their own taps first.
-            .pointerInput(Unit) { detectTapGestures(onTap = { onOpenEditor() }) },
-    ) {
-        if (blackout) return@BoxWithConstraints   // night: nothing but black (and the tap handler)
+    CompositionLocalProvider(LocalBoardSounds provides sounds.takeIf { flapSounds }) {
+        BoxWithConstraints(
+            Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                // Tap anywhere opens the editor; the gear and the dazzle tile consume their own taps first.
+                .pointerInput(Unit) { detectTapGestures(onTap = { onOpenEditor() }) },
+        ) {
+            if (blackout) return@BoxWithConstraints   // night: nothing but black (and the tap handler)
 
-        val density = LocalDensity.current
-        val widthPx = constraints.maxWidth.toFloat()
-        val heightPx = constraints.maxHeight.toFloat()
-        val longest = board.maxOfOrNull { it.label.length } ?: 1
-        val layout = remember(widthPx, heightPx, longest) { BoardLayout(widthPx, heightPx, longest) }
+            val density = LocalDensity.current
+            val widthPx = constraints.maxWidth.toFloat()
+            val heightPx = constraints.maxHeight.toFloat()
+            val longest = board.maxOfOrNull { it.label.length } ?: 1
+            val layout = remember(widthPx, heightPx, longest) { BoardLayout(widthPx, heightPx, longest) }
 
-        // Pinned events are always kept on screen (at the top); the rest of the
-        // rows are filled with the soonest non-pinned events.
-        val pinned = board.filter { it.pinned }.take(layout.maxRows)
-        val nonPinned = board.filter { !it.pinned }.take(maxOf(0, layout.maxRows - pinned.size))
-        val visible = pinned + nonPinned
+            // Pinned events are always kept on screen (at the top); the rest of the
+            // rows are filled with the soonest non-pinned events.
+            val pinned = board.filter { it.pinned }.take(layout.maxRows)
+            val nonPinned = board.filter { !it.pinned }.take(maxOf(0, layout.maxRows - pinned.size))
+            val visible = pinned + nonPinned
 
-        if (visible.isEmpty()) {
-            EmptyState(layout)
-        } else {
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = with(density) { layout.hPadding.toDp() })
-                    .padding(top = with(density) { layout.topInset.toDp() })
-            ) {
-                Box(
-                    Modifier.fillMaxWidth().height(with(density) { layout.headerHeight.toDp() }),
-                    contentAlignment = Alignment.BottomEnd,
+            if (visible.isEmpty()) {
+                EmptyState(layout)
+            } else {
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = with(density) { layout.hPadding.toDp() })
+                        .padding(top = with(density) { layout.topInset.toDp() })
                 ) {
-                    ClockHeader(layout.metrics)
-                }
-                val rowHeight = with(density) { layout.rowHeight.toDp() }
-                visible.forEachIndexed { idx, event ->
-                    key(event.id) {
-                        EventRow(
-                            event = event, metrics = layout.metrics, rowHeight = rowHeight,
-                            dazzle = dazzle,
-                            row = idx,
-                            clockStartColumn = longest + 1,
-                            onDazzleTap = if (idx == 0) ({ if (dazzle == null) dazzle = DazzleRun() }) else null,
-                            onTrainTap = if (idx == visible.lastIndex) ({ if (train == null) train = TrainRun() }) else null,
-                        )
-                        Box(Modifier.fillMaxWidth().height(with(density) { 1f.toDp() }).background(FlipMetrics.separator))
+                    Box(
+                        Modifier.fillMaxWidth().height(with(density) { layout.headerHeight.toDp() }),
+                        contentAlignment = Alignment.BottomEnd,
+                    ) {
+                        ClockHeader(layout.metrics)
+                    }
+                    val rowHeight = with(density) { layout.rowHeight.toDp() }
+                    visible.forEachIndexed { idx, event ->
+                        key(event.id) {
+                            EventRow(
+                                event = event, metrics = layout.metrics, rowHeight = rowHeight,
+                                dazzle = dazzle,
+                                row = idx,
+                                clockStartColumn = longest + 1,
+                                onDazzleTap = if (idx == 0) ({ if (dazzle == null) dazzle = DazzleRun() }) else null,
+                                onTrainTap = if (idx == visible.lastIndex) ({ if (train == null) train = TrainRun() }) else null,
+                            )
+                            Box(Modifier.fillMaxWidth().height(with(density) { 1f.toDp() }).background(FlipMetrics.separator))
+                        }
                     }
                 }
             }
-        }
 
-        train?.let { run ->
-            TrainOverlay(
-                run = run, widthPx = widthPx, heightPx = heightPx, rowHeightPx = layout.rowHeight,
-                whistle = whistle, onFinished = { train = null },
-            )
-        }
+            train?.let { run ->
+                TrainOverlay(
+                    run = run, widthPx = widthPx, heightPx = heightPx, rowHeightPx = layout.rowHeight,
+                    sounds = sounds, onFinished = { train = null },
+                )
+            }
 
-        IconButton(onClick = onOpenEditor, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(48.dp)) {
-            Icon(Icons.Filled.Settings, contentDescription = "Edit events", tint = FlipMetrics.gear, modifier = Modifier.size(26.dp))
+            IconButton(onClick = onOpenEditor, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(48.dp)) {
+                Icon(Icons.Filled.Settings, contentDescription = "Edit events", tint = FlipMetrics.gear, modifier = Modifier.size(26.dp))
+            }
         }
     }
 }

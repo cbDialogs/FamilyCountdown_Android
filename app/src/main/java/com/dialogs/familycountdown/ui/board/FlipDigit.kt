@@ -34,6 +34,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Density
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private enum class Half { TOP, BOTTOM }
 
@@ -101,6 +103,8 @@ fun TileFace(
 /**
  * One flip card showing a single character, animating the classic two-leaf
  * mechanical fold whenever its [value] changes. [delayMs] staggers it within a group.
+ * When [tick] is true and [LocalBoardSounds] is set, the card clicks as its lower
+ * leaf lands ([FlipMetrics.CLACK_AT]).
  *
  * Phase 1 (progress 0–0.5): the old top leaf folds down toward the viewer.
  * Phase 2 (0.5–1): the new bottom leaf drops and bounces to settle.
@@ -112,6 +116,7 @@ fun FlipDigit(
     value: Char,
     metrics: FlipMetrics,
     delayMs: Int = 0,
+    tick: Boolean = true,
     tileTop: Color = FlipMetrics.cardTop,
     tileBottom: Color = FlipMetrics.cardBottom,
     glyph: Color = FlipMetrics.glyphColor,
@@ -120,11 +125,16 @@ fun FlipDigit(
     var oldChar by remember { mutableStateOf(value) }
     var newChar by remember { mutableStateOf(value) }
     val progress = remember { Animatable(1f) }   // 1 = fully settled on the new char
+    val sounds = if (tick) LocalBoardSounds.current else null
 
     LaunchedEffect(value) {
         if (value != newChar) {
             oldChar = newChar
             newChar = value
+            if (sounds != null) {
+                // Cancelled with this effect if the value changes again before the card lands.
+                launch { delay((delayMs + FlipMetrics.CLACK_DELAY_MS).toLong()); sounds.tick() }
+            }
             progress.snapTo(0f)                   // jump to show the old char
             progress.animateTo(1f, tween(FlipMetrics.DURATION_MS, delayMs, LinearEasing))
         }

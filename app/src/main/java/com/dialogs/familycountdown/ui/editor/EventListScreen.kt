@@ -163,7 +163,7 @@ private fun PinIcon() {
 /**
  * Kiosk: the boot receiver can only bring the board back after a reboot when
  * "Display over other apps" has been granted (Android 10+ background-start rule);
- * the night-blackout and arrival-train switches; and Exit Kiosk, which closes the app.
+ * the night-blackout, arrival-train and flap-sounds switches; and Exit Kiosk, which closes the app.
  */
 @Composable
 private fun KioskSection(settings: SettingsStore) {
@@ -171,6 +171,7 @@ private fun KioskSection(settings: SettingsStore) {
     var allowed by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
     val blackout by settings.nightBlackoutEnabled.collectAsState()
     val train by settings.arrivalTrainEnabled.collectAsState()
+    val flapSounds by settings.flapSoundsEnabled.collectAsState()
     var confirmExit by remember { mutableStateOf(false) }
 
     // Re-check when we come back from the system settings screen.
@@ -216,6 +217,12 @@ private fun KioskSection(settings: SettingsStore) {
             title = "Arrival train",
             subtitle = "Steam train and whistle every few minutes on an event's day",
             trailing = { Switch(checked = train, onCheckedChange = { settings.setArrivalTrainEnabled(it) }) },
+        )
+        RowDivider()
+        SettingsRow(
+            title = "Flap sounds",
+            subtitle = "Tick as the cards flip; a card shuffle on razzle dazzle",
+            trailing = { Switch(checked = flapSounds, onCheckedChange = { settings.setFlapSoundsEnabled(it) }) },
         )
         RowDivider()
         SettingsRow(

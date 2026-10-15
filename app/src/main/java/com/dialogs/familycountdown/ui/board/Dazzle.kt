@@ -68,6 +68,7 @@ fun DazzleTile(
     } else {
         FlipDigit(
             value = dazzle.charFor(row, column, real), metrics = metrics, delayMs = dazzle.stagger(column),
+            tick = false,   // the run plays one card shuffle instead of a hundred ticks
             tileTop = tileTop, tileBottom = tileBottom, glyph = glyph, modifier = modifier,
         )
     }

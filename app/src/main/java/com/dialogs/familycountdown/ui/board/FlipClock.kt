@@ -40,7 +40,7 @@ fun FlipGroup(
             if (dazzle == null) {
                 FlipDigit(value = ch, metrics = metrics, delayMs = (chars.length - 1 - idx) * FlipMetrics.STAGGER_MS, modifier = tapModifier)
             } else {
-                FlipDigit(value = dazzle.charFor(row, column, ch), metrics = metrics, delayMs = dazzle.stagger(column), modifier = tapModifier)
+                FlipDigit(value = dazzle.charFor(row, column, ch), metrics = metrics, delayMs = dazzle.stagger(column), tick = false, modifier = tapModifier)
             }
         }
     }

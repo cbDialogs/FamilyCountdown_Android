@@ -10,6 +10,7 @@ import com.dialogs.familycountdown.model.TimeRemaining
 import com.dialogs.familycountdown.model.TimeShift
 import com.dialogs.familycountdown.model.TrainSchedule
 import com.dialogs.familycountdown.ui.board.DazzleRun
+import com.dialogs.familycountdown.ui.board.FlipMetrics
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -227,6 +228,13 @@ class CountdownTests {
         assertTrue("expected variety across columns, got $acrossColumns", acrossColumns.size > 5)
         val acrossRows = (0 until 8).map { a.charFor(it, 0, ' ') }.toSet()
         assertTrue("expected variety across rows, got $acrossRows", acrossRows.size > 2)
+    }
+
+    @Test fun flapTickLandsBeforeTheNextSecondFlip() {
+        // The seconds digit flips every 1000 ms; its tick must be scheduled inside that window
+        // or the next flip cancels it before it plays.
+        assertTrue(FlipMetrics.CLACK_DELAY_MS in 1 until 1000)
+        assertTrue(FlipMetrics.CLACK_DELAY_MS <= FlipMetrics.DURATION_MS)
     }
 
     // MARK: - Arrival train

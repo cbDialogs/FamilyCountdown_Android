@@ -12,8 +12,8 @@ import java.time.format.FormatStyle
 /**
  * User preferences: the display time zone used for day boundaries (ARRIVED /
  * roll-forward), holiday midnights, and the editor's date fields (empty
- * identifier == Automatic, follows the device), the night-blackout switch, and the
- * arrival-train switch.
+ * identifier == Automatic, follows the device), the night-blackout switch, the
+ * arrival-train switch, and the flap-sounds switch.
  */
 class SettingsStore(context: Context) {
     private val prefs: SharedPreferences =
@@ -45,6 +45,15 @@ class SettingsStore(context: Context) {
         prefs.edit().putBoolean(KEY_TRAIN, enabled).apply()
     }
 
+    private val _flapSoundsEnabled = MutableStateFlow(prefs.getBoolean(KEY_FLAP_SOUNDS, true))
+    /** When on, each card ticks as it flips and a razzle-dazzle run plays a card shuffle. */
+    val flapSoundsEnabled: StateFlow<Boolean> = _flapSoundsEnabled
+
+    fun setFlapSoundsEnabled(enabled: Boolean) {
+        _flapSoundsEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_FLAP_SOUNDS, enabled).apply()
+    }
+
     val isAutomatic: Boolean get() = _timeZoneIdentifier.value.isEmpty()
 
     /** Resolved zone; read freshly each time so a system zone change is picked up. */
@@ -57,6 +66,7 @@ class SettingsStore(context: Context) {
         private const val KEY_TZ = "timeZoneIdentifier"
         private const val KEY_BLACKOUT = "nightBlackoutEnabled"
         private const val KEY_TRAIN = "arrivalTrainEnabled"
+        private const val KEY_FLAP_SOUNDS = "flapSoundsEnabled"
 
         /** Night blackout window: 9:00 PM up to (not including) 6:00 AM, local to the display zone. */
         const val BLACKOUT_START_HOUR = 21

@@ -17,14 +17,15 @@ in landscape, but it works on any landscape tablet from Android 8 (API 26) up.
 The gear (top-right), or a tap anywhere on the board, opens the editor: set
 the display time zone, shift saved event times between zones, add / edit /
 delete events, grant the one permission needed for auto-start after a reboot,
-switch the night blackout and the arrival train on or off, and **Exit Kiosk**
-(close the app and return to Android).
+switch the night blackout, the arrival train and the flap sounds on or off, and
+**Exit Kiosk** (close the app and return to Android).
 
-![FamilyCountdown editor — Display settings (Time Zone, Shift Event Times), the Kiosk rows (auto-start permission, Night blackout and Arrival train switches, Exit Kiosk), and the editable event list](docs/settings.png)
+![FamilyCountdown editor — Display settings (Time Zone, Shift Event Times), the Kiosk rows (auto-start permission, Night blackout, Arrival train and Flap sounds switches, Exit Kiosk), and the editable event list](docs/settings.png)
 
 Tap the first tile of the top row for a little **razzle dazzle**: every tile on
 the board flips through random letters and digits for about five seconds in a
-left-to-right wave, then settles back on the real display.
+left-to-right wave, to the sound of a deck of cards being shuffled, then settles
+back on the real display.
 
 ![FamilyCountdown mid razzle-dazzle — every tile showing a random letter or digit](docs/dazzle.png)
 
@@ -42,6 +43,13 @@ Easter egg: tap the bottom-right card (the last seconds digit of the bottom row)
 and the train runs once, any day, switch or no switch.
 
 ![FamilyCountdown arrival train — Disney Trip reads ARRIVED while a cartoon steam locomotive and three passenger cars cross the middle of the board](docs/train.png)
+
+**Flap sounds** (on by default): every card gives a small mechanical tick as it
+lands, like a ticking clock — once a second for the seconds digit, a short
+cascade at each minute, hour and day rollover — and a razzle-dazzle run plays a
+card shuffle instead of a hundred ticks. Both play on the device's media volume;
+the switch is in the editor's Kiosk section. The train whistle is not affected
+by this switch (it follows Arrival train).
 
 **Time Zone** picks which zone drives day boundaries (defaults to Automatic, following the device):
 
@@ -105,13 +113,16 @@ app/src/main/java/com/dialogs/familycountdown/
   ui/board/   BoardScreen (board + 1 s tick, tap-anywhere, blackout, dazzle + train drivers),
               BoardLayout (font-size / rows math), EventRow,
               FlipClock/FlipGroup/TileText/ClockHeader, FlipDigit/TileFace (split-flap),
-              Dazzle (DazzleRun + DazzleTile), Train (TrainRun + TrainOverlay), TrainWhistle
+              Dazzle (DazzleRun + DazzleTile), Train (TrainRun + TrainOverlay),
+              BoardSounds (SoundPool: whistle, flap tick, card shuffle)
   ui/editor/  EditorOverlay (in-window sheet + back stack), EventListScreen, EventEditorScreen
               (+ date / time pickers), TimeZonePickerScreen, ShiftTimesScreen
   MainActivity (immersive, keep-screen-on), BootReceiver, FamilyCountdownApp
 app/src/main/assets/SeedEvents.json        first-launch seed (same file as iOS)
 app/src/main/res/font/                     JetBrains Mono ExtraBold
 app/src/main/res/raw/steam_whistle.wav     the arrival-train whistle (CC0, see Credits)
+app/src/main/res/raw/flap_tick.wav         one card landing (CC0, see Credits)
+app/src/main/res/raw/card_shuffle.wav      the razzle-dazzle shuffle, looped (CC0, see Credits)
 app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, store round-trip, time shift,
                                            blackout hours, dazzle characters, train timing
 ```
@@ -156,9 +167,17 @@ app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, 
   `TrainRun`; `TrainOverlay` (ui/board/Train.kt) animates it across the board
   with a `Canvas` (locomotive, three cars, spinning spokes, smoke puffs) in
   9 s, reading progress only in the draw lambda so nothing recomposes. The
-  overlay has no pointer handling, so taps still reach the board. `TrainWhistle`
-  preloads the clip into a `SoundPool` on the media stream and plays it as the
-  train enters and again part-way across.
+  overlay has no pointer handling, so taps still reach the board. The whistle
+  plays as the train enters and again part-way across.
+- **Sounds**: `BoardSounds` (ui/board) preloads the three clips into one
+  `SoundPool` on the media stream and is handed to the tiles through the
+  `LocalBoardSounds` composition local — `null` while the Flap sounds switch is
+  off, so nothing deep in the tree needs a parameter. `FlipDigit` schedules its
+  tick for `FlipMetrics.CLACK_AT` (68 %) of the flip, the first touchdown of the
+  bouncing lower leaf, so the click lands where the card visibly lands; the
+  pitch is nudged ±6 % per play so eight rows landing on the same second read as
+  separate cards. Dazzle tiles flip with `tick = false` and `BoardScreen` loops
+  the shuffle clip from the first scramble tick until the settle tick instead.
 - **Exit Kiosk**: `finishAndRemoveTask()` after an inline confirm. While
   auto-start is allowed the boot receiver brings the board back after the next
   power cycle.
@@ -168,6 +187,11 @@ app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, 
 - Steam whistle: ["Steam whistle"](https://opengameart.org/node/5258) by bart,
   OpenGameArt.org, [CC0](https://creativecommons.org/publicdomain/zero/1.0/)
   (downmixed to mono).
+- Flap tick: "tick4" from ["ticking clock"](https://opengameart.org/content/ticking-clock)
+  by bart, OpenGameArt.org, CC0 (downmixed to mono, trimmed, normalised).
+- Card shuffle: "card-shuffle" from
+  ["54 Casino sound effects (cards, dice, chips)"](https://opengameart.org/content/54-casino-sound-effects-cards-dice-chips)
+  by [Kenney](https://kenney.nl), CC0 (OGG decoded to mono WAV, trimmed, normalised).
 - Font: JetBrains Mono (SIL Open Font License).
 
 ## License

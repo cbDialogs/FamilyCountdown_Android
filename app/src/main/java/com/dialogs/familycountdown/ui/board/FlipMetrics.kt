@@ -21,6 +21,12 @@ data class FlipMetrics(val fontSize: Float) {
         /** PQINA defaults ported from flip.min.js (via the iOS app). */
         const val DURATION_MS = 800          // flipDuration 800ms
         const val STAGGER_MS = 50            // 50ms right-to-left step
+        /**
+         * Where in a flip the falling lower leaf first touches down (0.5 + 0.5 × 1/2.75 of
+         * the ease-out-bounce), i.e. when the card audibly lands.
+         */
+        const val CLACK_AT = 0.68f
+        val CLACK_DELAY_MS: Int = (DURATION_MS * CLACK_AT).toInt()
 
         // The split-flap tile: a white flap with a dark character and a hairline seam.
         val glyphColor = Color(0xFF0F0F0F)   // dark character on the flap

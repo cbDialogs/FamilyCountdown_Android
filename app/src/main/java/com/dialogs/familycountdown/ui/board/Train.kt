@@ -48,15 +48,15 @@ fun TrainOverlay(
     widthPx: Float,
     heightPx: Float,
     rowHeightPx: Float,
-    whistle: TrainWhistle?,
+    sounds: BoardSounds?,
     onFinished: () -> Unit,
 ) {
     val progress = remember(run) { Animatable(0f) }
     LaunchedEffect(run) {
-        whistle?.play()
+        sounds?.whistle()
         launch {
             delay((TrainRun.CROSSING_MS * TrainRun.SECOND_WHISTLE_AT).toLong())
-            whistle?.play()
+            sounds?.whistle()
         }
         progress.animateTo(1f, tween(TrainRun.CROSSING_MS, easing = LinearEasing))
         onFinished()
