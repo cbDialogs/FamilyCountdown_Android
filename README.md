@@ -20,7 +20,7 @@ delete events, grant the one permission needed for auto-start after a reboot,
 switch the night blackout and the arrival train on or off, and **Exit Kiosk**
 (close the app and return to Android).
 
-![FamilyCountdown editor — Display settings (Time Zone, Shift Event Times), the Kiosk rows (auto-start permission, Night blackout switch, Exit Kiosk), and the editable event list](docs/settings.png)
+![FamilyCountdown editor — Display settings (Time Zone, Shift Event Times), the Kiosk rows (auto-start permission, Night blackout and Arrival train switches, Exit Kiosk), and the editable event list](docs/settings.png)
 
 Tap the first tile of the top row for a little **razzle dazzle**: every tile on
 the board flips through random letters and digits for about five seconds in a
@@ -40,6 +40,8 @@ minutes for the rest of the day (never during night blackout). The whistle
 plays on the device's media volume. The switch is in the editor's Kiosk section.
 Easter egg: tap the bottom-right card (the last seconds digit of the bottom row)
 and the train runs once, any day, switch or no switch.
+
+![FamilyCountdown arrival train — Disney Trip reads ARRIVED while a cartoon steam locomotive and three passenger cars cross the middle of the board](docs/train.png)
 
 **Time Zone** picks which zone drives day boundaries (defaults to Automatic, following the device):
 
