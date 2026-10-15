@@ -189,9 +189,9 @@ app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, 
   (downmixed to mono).
 - Flap tick: "tick4" from ["ticking clock"](https://opengameart.org/content/ticking-clock)
   by bart, OpenGameArt.org, CC0 (downmixed to mono, trimmed, normalised).
-- Card shuffle: "card-shuffle" from
-  ["54 Casino sound effects (cards, dice, chips)"](https://opengameart.org/content/54-casino-sound-effects-cards-dice-chips)
-  by [Kenney](https://kenney.nl), CC0 (OGG decoded to mono WAV, trimmed, normalised).
+- Card shuffle: "shuffleandbridge" from
+  ["Playing Card Sounds"](https://opengameart.org/content/playing-card-sounds)
+  by BMacZero (Brian MacIntosh), OpenGameArt.org, CC0 (trimmed, normalised).
 - Font: JetBrains Mono (SIL Open Font License).
 
 ## License
