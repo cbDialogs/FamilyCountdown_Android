@@ -9,6 +9,7 @@ import com.dialogs.familycountdown.model.SettingsStore
 import com.dialogs.familycountdown.model.TimeRemaining
 import com.dialogs.familycountdown.model.TimeShift
 import com.dialogs.familycountdown.model.TrainSchedule
+import com.dialogs.familycountdown.ui.board.BoardLayout
 import com.dialogs.familycountdown.ui.board.DazzleRun
 import com.dialogs.familycountdown.ui.board.FlipMetrics
 import org.junit.Assert.assertEquals
@@ -255,4 +256,18 @@ class CountdownTests {
     }
 
     private fun tempFile() = File(System.getProperty("java.io.tmpdir"), "fc-test-${UUID.randomUUID()}.json")
+
+    // MARK: - Board layout
+
+    @Test fun layoutFitsTargetRowsOn1080p() {
+        val l = BoardLayout(1920f, 1080f, 18)
+        assertEquals(BoardLayout.TARGET_ROWS, l.maxRows)
+        assertTrue("font ${l.fontSize}", l.fontSize in 50f..54f)
+        // The rows really fit: header + rows + separators never exceed the screen.
+        assertTrue(l.topInset + l.headerHeight + l.maxRows * (l.rowHeight + 1f) <= 1080f)
+    }
+
+    @Test fun layoutLongLabelStillFitsTargetRows() = assertTrue(BoardLayout(1920f, 1080f, 26).maxRows >= BoardLayout.TARGET_ROWS)
+
+    @Test fun layoutPixel7LandscapeFitsTargetRows() = assertEquals(BoardLayout.TARGET_ROWS, BoardLayout(2400f, 1080f, 18).maxRows)
 }

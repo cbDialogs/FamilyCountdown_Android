@@ -175,7 +175,7 @@ app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, 
   off, so nothing deep in the tree needs a parameter. `FlipDigit` schedules its
   tick for `FlipMetrics.CLACK_AT` (68 %) of the flip, the first touchdown of the
   bouncing lower leaf, so the click lands where the card visibly lands; the
-  pitch is nudged ±6 % per play so eight rows landing on the same second read as
+  pitch is nudged ±6 % per play so nine rows landing on the same second read as
   separate cards. Dazzle tiles flip with `tick = false` and `BoardScreen` loops
   the shuffle clip from the first scramble tick until the settle tick instead.
 - **Exit Kiosk**: `finishAndRemoveTask()` after an inline confirm. While
