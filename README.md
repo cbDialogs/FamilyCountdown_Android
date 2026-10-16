@@ -1,7 +1,7 @@
 # FamilyCountdown (Android kiosk)
 
 A native Android port of the
-[FamilyCountdown iPad app](https://github.com/wcharliebrown/FamilyCountdown_iOS):
+[FamilyCountdown iPad app](https://github.com/cbDialogs/FamilyCountdown_iOS):
 a black "train-station board" listing events by name with a split-flap countdown
 of days / hours / minutes / seconds until each one. On the event's day the digits
 are replaced by a red **ARRIVED**; the day after, repeating events (birthdays)
