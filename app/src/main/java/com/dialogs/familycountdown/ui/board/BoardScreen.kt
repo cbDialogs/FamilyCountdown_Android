@@ -43,6 +43,12 @@ import com.dialogs.familycountdown.model.TrainSchedule
 import com.dialogs.familycountdown.ui.theme.JetBrainsMono
 import kotlinx.coroutines.delay
 import java.time.Instant
+import kotlin.math.max
+
+// The gear is dp-sized (a real touch target); everything else on the board is in px.
+private val GearPadding = 6.dp
+private val GearButton = 48.dp
+private val GearIcon = 26.dp
 
 /**
  * The station-board display: black, landscape, as many rows as fit.
@@ -134,7 +140,11 @@ fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> 
             val widthPx = constraints.maxWidth.toFloat()
             val heightPx = constraints.maxHeight.toFloat()
             val longest = board.maxOfOrNull { it.label.length } ?: 1
-            val layout = remember(widthPx, heightPx, longest) { BoardLayout(widthPx, heightPx, longest) }
+            // Reserve the gear's full footprint above the header; on a 160 dpi panel that is
+            // the classic 44 px strip, on denser screens the rows shrink a little to make room.
+            val gearStrip = with(density) { (GearPadding + GearButton).toPx() }
+            val topInset = max(BoardLayout.MIN_TOP_INSET, gearStrip)
+            val layout = remember(widthPx, heightPx, longest, topInset) { BoardLayout(widthPx, heightPx, longest, topInset) }
 
             // Pinned events are always kept on screen (at the top); the rest of the
             // rows are filled with the soonest non-pinned events.
@@ -181,8 +191,8 @@ fun BoardScreen(store: EventStore, settings: SettingsStore, onOpenEditor: () -> 
                 )
             }
 
-            IconButton(onClick = onOpenEditor, modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(48.dp)) {
-                Icon(Icons.Filled.Settings, contentDescription = "Edit events", tint = FlipMetrics.gear, modifier = Modifier.size(26.dp))
+            IconButton(onClick = onOpenEditor, modifier = Modifier.align(Alignment.TopEnd).padding(GearPadding).size(GearButton)) {
+                Icon(Icons.Filled.Settings, contentDescription = "Edit events", tint = FlipMetrics.gear, modifier = Modifier.size(GearIcon))
             }
         }
     }

@@ -138,7 +138,10 @@ app/src/test/.../CountdownTests.kt         holiday math, roll-forward, ARRIVED, 
   and the draw lambda, so the board never recomposes while flipping.
 - **Board sizing** is done in physical pixels (not dp) using the same ratios as
   the iOS app, so any 1080p panel fills the same way regardless of the density
-  it reports. The editor UI uses normal dp.
+  it reports. The editor UI uses normal dp, and so does the gear (a real
+  touch target); the strip reserved above the header is the larger of 44 px
+  and the gear's footprint, so the gear never overlaps the column labels and
+  the rows just get a little shorter on dense screens.
 - **Storage**: `files/FamilyCountdownEvents.json` in the app's private storage,
   seeded on first launch from the bundled `SeedEvents.json`. The JSON format
   (`label`, `targetDate` ISO-8601 with offset, `pinned`, `repeats`) matches the

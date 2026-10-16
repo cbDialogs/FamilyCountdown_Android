@@ -270,4 +270,14 @@ class CountdownTests {
     @Test fun layoutLongLabelStillFitsTargetRows() = assertTrue(BoardLayout(1920f, 1080f, 26).maxRows >= BoardLayout.TARGET_ROWS)
 
     @Test fun layoutPixel7LandscapeFitsTargetRows() = assertEquals(BoardLayout.TARGET_ROWS, BoardLayout(2400f, 1080f, 18).maxRows)
+
+    @Test fun layoutKeepsTargetRowsUnderATallGearStrip() {
+        // 240 dpi kiosk: 54 dp gear footprint = 81 px; 420 dpi phone: 141.75 px.
+        for (inset in listOf(81f, 141.75f)) {
+            val l = BoardLayout(1920f, 1080f, 18, topInset = inset)
+            assertEquals("inset $inset", BoardLayout.TARGET_ROWS, l.maxRows)
+            assertTrue(l.topInset + l.headerHeight + l.maxRows * (l.rowHeight + 1f) <= 1080f)
+            assertTrue(l.fontSize < BoardLayout(1920f, 1080f, 18).fontSize)
+        }
+    }
 }

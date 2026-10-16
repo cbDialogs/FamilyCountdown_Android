@@ -10,10 +10,18 @@ import kotlin.math.min
  * **and** lets [TARGET_ROWS] rows fit under the header — so every row (names
  * and digits alike) renders at exactly the same size. A longer name shrinks
  * the font further, and then more rows fit.
+ *
+ * [topInset] is the strip reserved above the header for the gear button; the
+ * caller passes the gear's real height (it is dp-sized, the board is not) so
+ * the gear never overlaps the DAYS / HOURS / … labels on dense screens.
  */
-class BoardLayout(widthPx: Float, heightPx: Float, longestLabel: Int) {
+class BoardLayout(
+    widthPx: Float,
+    heightPx: Float,
+    longestLabel: Int,
+    val topInset: Float = MIN_TOP_INSET,
+) {
     val hPadding = 40f
-    val topInset = 44f            // reserved strip so the gear never overlaps the header
     val fontSize: Float
     val metrics: FlipMetrics
     val headerHeight: Float
@@ -55,6 +63,8 @@ class BoardLayout(widthPx: Float, heightPx: Float, longestLabel: Int) {
         /** Rows the font size is chosen to fit on screen (a 1080p panel shows exactly this many). */
         const val TARGET_ROWS = 9
         const val MIN_FONT = 16f
+        /** Smallest strip above the header, so the layout never gets tighter than it was. */
+        const val MIN_TOP_INSET = 44f
         const val MAX_FONT = 58f
         private const val V_PAD_RATIO = 0.34f     // vertical padding above/below a row's flaps
         private const val HEADER_RATIO = 0.24f    // DAYS / HOURS / … label height
