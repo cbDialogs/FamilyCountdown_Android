@@ -11,8 +11,10 @@ and stored on-device — no server or password.
 
 ![FamilyCountdown board on a 1080p Android kiosk — split-flap countdowns to Disney Trip, US holidays, and birthdays](docs/board.png)
 
-Built for a 15.6" 1920×1080 Android 12 touch kiosk (HIGOLE all-in-one) running
-in landscape, but it works on any landscape tablet from Android 8 (API 26) up.
+Built for a 15.6" 1920×1080 Android 12 touch kiosk (the
+[HIGOLE F15R all-in-one panel PC](https://www.amazon.com/dp/B0FX5SG3TC), RK3399,
+4 GB / 64 GB, pivoting VESA mount) running in landscape, but it works on any
+landscape tablet from Android 8 (API 26) up.
 
 The gear (top-right), or a tap anywhere on the board, opens the editor: set
 the display time zone, shift saved event times between zones, add / edit /
